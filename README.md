@@ -1,4 +1,4 @@
-"""dolibarr-docker-compose-windows""" 🚀
+# dolibarr-docker-compose-windows 🚀
 
 A **Docker setup dedicated to development and maintenance of Dolibarr core and modules**, optimized for **Windows with Docker Desktop (WSL2, x86_64 / amd64)**, using **Nginx + PHP-FPM + MariaDB + Traefik**.  
 Lightweight, performant, and ready for core and module development.
