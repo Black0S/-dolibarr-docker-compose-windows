@@ -1,0 +1,87 @@
+version: "3.9"
+
+services:
+  # -------------------
+  # Traefik : reverse proxy HTTPS
+  # -------------------
+  traefik:
+    image: "traefik:latest"
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=localhost@email.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "../letsencrypt:/letsencrypt"
+
+  # -------------------
+  # PHP-FPM : moteur PHP pour Dolibarr
+  # -------------------
+  php-fpm:
+    platform: linux/arm64
+    build:
+      context: ../php-dockerfile
+      dockerfile: php-8.4.Dockerfile
+    depends_on:
+      - mysql
+    volumes:
+      - "../dolibarr-core/dolibarr-22.0.1:/var/www/html/dolibarr:rw"
+      - "../custom:/var/www/html/dolibarr/htdocs/custom:rw"   # en rw pour plugins
+      - "../conf:/var/www/html/dolibarr/htdocs/conf:rw"
+    labels:
+      - "traefik.enable=false"
+
+  # -------------------
+  # Nginx : serveur web
+  # -------------------
+  nginx:
+    platform: linux/arm64
+    image: nginx:stable
+    depends_on:
+      - php-fpm
+    volumes:
+      - "../dolibarr-core/dolibarr-22.0.1:/var/www/html/dolibarr:ro"
+      - "../custom:/var/www/html/dolibarr/htdocs/custom:ro"  # plugins accessibles
+      - "../conf:/var/www/html/dolibarr/htdocs/conf:ro"
+      - "../nginx/default.conf:/etc/nginx/conf.d/default.conf:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dolibarr.rule=Host(`localhost`)"
+      - "traefik.http.routers.dolibarr.entrypoints=websecure"
+      - "traefik.http.routers.dolibarr.tls=true"
+      - "traefik.http.routers.dolibarr.tls.certresolver=myresolver"
+      - "traefik.http.services.dolibarr.loadbalancer.server.port=80"
+
+  # -------------------
+  # MariaDB : base Dolibarr
+  # -------------------
+  mysql:
+    platform: linux/arm64
+    image: "mariadb:latest"
+    volumes:
+      - "./dbdata:/var/lib/mysql"
+    command:
+      - "--default-authentication-plugin=mysql_native_password"
+    environment:
+      MYSQL_ROOT_PASSWORD: "rootPASS"
+      MYSQL_DATABASE: "dolibarr"
+      MYSQL_USER: "dbuser"
+      MYSQL_PASSWORD: "dbpass"
+    ports:
+      - "3306:3306"
+    labels:
+      - "traefik.enable=false"
+
+# -------------------
+# Réseau Docker partagé pour Traefik et services
+# -------------------
+networks:
+  default:
+    name: "traefikNetwork"
