@@ -57,7 +57,6 @@ services:
       - "traefik.http.routers.dolibarr.entrypoints=websecure"
       - "traefik.http.routers.dolibarr.tls=true"
       - "traefik.http.routers.dolibarr.tls.certresolver=myresolver"
-      - "traefik.http.services.dolibarr.loadbalancer.server.port=80"
 
   # -------------------
   # MariaDB : base Dolibarr
@@ -66,7 +65,7 @@ services:
     platform: linux/amd64
     image: "mariadb:latest"
     volumes:
-      - "./dbdata:/var/lib/mysql"
+      - dbdata:/var/lib/mysql   # <-- volume natif Docker
     command:
       - "--default-authentication-plugin=mysql_native_password"
     environment:
@@ -78,6 +77,12 @@ services:
       - "3306:3306"
     labels:
       - "traefik.enable=false"
+
+# -------------------
+# Volume natif Docker pour Windows
+# -------------------
+volumes:
+  dbdata:
 
 # -------------------
 # Réseau Docker partagé pour Traefik et services
