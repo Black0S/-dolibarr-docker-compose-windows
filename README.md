@@ -117,7 +117,7 @@ All services share `traefikNetwork`, enabling:
 | Service        | URL / Port                  | Notes |
 |----------------|----------------------------|-------|
 | Dolibarr       | `https://localhost/`        | via Traefik |
-| Traefik dash   | `http://localhost:8080`     | Dashboard |
+| Traefik dash   | `http://localhost:8080/dashboard/`     | Dashboard |
 | MariaDB        | `localhost:3306`            | Connect with HeidiSQL / DBeaver |
 | PHP-FPM        | internal only              | Not exposed |
 
